@@ -205,3 +205,10 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+models/
+plants/
+portraits/
+TOFDSR/
+NYUV2/
+nyu_depth_v2_labeled.mat
+RGBDD/
