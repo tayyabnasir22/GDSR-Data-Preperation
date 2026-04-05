@@ -7,7 +7,7 @@ import sys
 def main():
     ProcessingNYUMat.GenerateNPYFiles()
     ProcessingRGBDD.GenerateNPYFiles()
-    # ProcessingTOFDSR.GenerateNPYFiles()
+    ProcessingTOFDSR.GenerateNPYFiles()
     
     
 if __name__ == '__main__':
