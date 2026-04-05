@@ -6,7 +6,7 @@ import sys
 
 def main():
     ProcessingNYUMat.GenerateNPYFiles()
-    # ProcessingRGBDD.GenerateNPYFiles()
+    ProcessingRGBDD.GenerateNPYFiles()
     # ProcessingTOFDSR.GenerateNPYFiles()
     
     
