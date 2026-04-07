@@ -33,12 +33,12 @@ Tayyab Nasir *et al.*, title and venue to be added with the final PDF (see also 
 BibTeX template—replace `title`, `booktitle` or `journal`, `year`, and `url` with the values from the published version:
 
 ```bibtex
-@inproceedings{nasir2026gdsr,
-  author    = {Nasir, Tayyab and others},
-  title     = {REPLACE_WITH_PAPER_TITLE},
-  booktitle = {REPLACE_WITH_VENUE},
-  year      = {2026},
-  url       = {REPLACE_WITH_ARXIV_OR_DOI_URL}
+@article{nasir2026naimasemanticsawarergb,
+  title   = {NAIMA: Semantics Aware RGB Guided Depth Super-Resolution},
+  author  = {Tayyab Nasir, Daochang Liu, Ajmal Mian},
+  journal = {arXiv},
+  year    = {2026},
+  url     = {https://doi.org/10.48550/arXiv.2604.04407},
 }
 ```
 
