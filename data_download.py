@@ -10,7 +10,7 @@ def DownloadAndExtract(gdrive_url, name = "downloaded_file.zip", extract = True)
     zip_path = os.path.join(PathManager.GetBasePath(), name)
 
     print("Downloading from Google Drive...")
-    gdown.download(gdrive_url, zip_path, fuzzy=True)
+    gdown.download(gdrive_url, zip_path)
 
     print("Download complete.")
     if extract:
