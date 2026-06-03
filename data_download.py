@@ -37,6 +37,9 @@ def main():
     # TOFDSR - Currently point to the GDrive link proivded by authors
     #### 1iQEtPBVIA8pmYeSh6YKH93CsJWik1EJz
     DownloadAndExtract('https://drive.google.com/uc?id=##########')
+
+    # Hypersim
+    DownloadAndExtract('https://drive.google.com/uc?id=1q6R1J67NjCR5CyRy-Q9PBTUobJX_wovj')
     
 if __name__ == '__main__':
     argsLen = len(sys.argv) - 1
