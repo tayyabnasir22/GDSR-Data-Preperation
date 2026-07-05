@@ -8,7 +8,7 @@ from PIL import Image
 from numpy.lib.format import open_memmap
 
 class ProcessingDIML:
-    BASE = PathManager.GetBasePath() + 'DIML_Inp' # No backslash
+    BASE = PathManager.GetBasePath() + 'DIML_Inp/indoor' # No backslash
 
     @staticmethod
     def _GetPairs(base: str):
@@ -20,20 +20,13 @@ class ProcessingDIML:
 
                 res = filepath.split('/')
                 # Create a dict key to uniquely identify frames
-                if 'indoor' in filepath:
-                    r1 = '_'.join(res[-1].split('.')[0].split('_')[0:4])
+                r1 = '_'.join(res[-1].split('.')[0].split('_')[0:4])
 
-                    # Assumption is for every rgb there is a depth
-                    if file.lower().endswith(('.png')) and '/depth_filled/' in filepath:
-                        u[r1]['depth'] = filepath
-                    elif file.lower().endswith(('.png')) and '/color/' in filepath:
-                        u[r1]['rgb'] = filepath
-                else:
-                    r1 = res[-1].split('.')[0]
-                    if file.lower().endswith(('.png')) and '/depthmap/' in filepath:
-                        u[r1]['depth'] = filepath
-                    elif file.lower().endswith(('.png')) and '/outleft/' in filepath:
-                        u[r1]['rgb'] = filepath
+                # Assumption is for every rgb there is a depth
+                if file.lower().endswith(('.png')) and '/depth_filled/' in filepath:
+                    u[r1]['depth'] = filepath
+                elif file.lower().endswith(('.png')) and '/color/' in filepath:
+                    u[r1]['rgb'] = filepath
 
         # Convert the default dict to a list
         pairs = []
