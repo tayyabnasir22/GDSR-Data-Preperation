@@ -100,7 +100,7 @@ class ProcessingDIML:
         return images
 
     @staticmethod
-    def _GenerateDepthMaskBatch(depth_maps, min_depth=0.5, max_depth=7.0):
+    def _GenerateDepthMaskBatch(depth_maps, min_depth=0.5, max_depth=8.0):
         mask = (depth_maps >= min_depth) & (depth_maps <= max_depth)
         return mask
 
@@ -143,7 +143,7 @@ class ProcessingDIML:
             mask_mm[start:end] = masks
 
             # 2.5. Clip the depths between 0.1 and 10 m
-            depth_mapsC = np.clip(depth_mapsT, 0.5, 7.0)
+            depth_mapsC = np.clip(depth_mapsT, 0.5, 8.0)
             depthC_mm[start:end] = depth_mapsC
 
             # 2.6. Generate min max normalized verison of the depth, and min max maps
