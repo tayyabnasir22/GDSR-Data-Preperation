@@ -8,3 +8,4 @@ class BenchmarkType(Enum):
     MIDDLE = "MIDDLE"
     HYPERSIM = "HYPERSIM"
     SUNRGBD = "SUNRGBD"
+    DIML = "DIML"
