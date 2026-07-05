@@ -8,7 +8,7 @@ from PIL import Image
 from numpy.lib.format import open_memmap
 
 class ProcessingDIML:
-    BASE = PathManager.GetBasePath() + 'DIML_Inp/indoor' # No backslash
+    BASE = PathManager.GetBasePath() + 'DIML_Inp' # No backslash
 
     @staticmethod
     def _GetPairs(base: str):
@@ -20,18 +20,26 @@ class ProcessingDIML:
 
                 res = filepath.split('/')
                 # Create a dict key to uniquely identify frames
-                r1 = res[-1].split('.')[0]
+                if 'indoor' in filepath:
+                    r1 = '_'.join(res[-1].split('.')[0].split('_')[0:4])
 
-                # Assumption is for every rgb there is a depth
-                if file.lower().endswith(('.png')) and '/depth_filled/' in filepath:
-                    u[r1]['depth'] = filepath
-                elif file.lower().endswith(('.jpg')) and '/color/' in filepath:
-                    u[r1]['rgb'] = filepath
+                    # Assumption is for every rgb there is a depth
+                    if file.lower().endswith(('.png')) and '/depth_filled/' in filepath:
+                        u[r1]['depth'] = filepath
+                    elif file.lower().endswith(('.png')) and '/color/' in filepath:
+                        u[r1]['rgb'] = filepath
+                else:
+                    r1 = res[-1].split('.')[0]
+                    if file.lower().endswith(('.png')) and '/depthmap/' in filepath:
+                        u[r1]['depth'] = filepath
+                    elif file.lower().endswith(('.png')) and '/outleft/' in filepath:
+                        u[r1]['rgb'] = filepath
 
         # Convert the default dict to a list
         pairs = []
         # Here implicitly it will be checked if every pair has a valid depth and rgb path, else there should be an error
         for k, v in u.items():
+            print(v)
             pairs.append({
                 'rgb': v['rgb'],
                 'depth': v['depth']
@@ -48,7 +56,9 @@ class ProcessingDIML:
         rgb_images = []
         depth_images = []
 
-        for depth_path, rgb_path in paths:
+        for path in paths:
+            depth_path = path['depth']
+            rgb_path = path['rgb']
             # Load RGB (H, W, 3)
             rgb = np.array(Image.open(rgb_path).convert("RGB"))
 
@@ -151,7 +161,7 @@ class ProcessingDIML:
     @staticmethod
     def GenerateNPYFiles(batch_size: int = 32):
         # 1. Load data paths
-        train_pairs, test_pairs = ProcessingDIML._LoadPaths()
+        test_pairs = ProcessingDIML._LoadPaths()
 
         # 2. Create the output path
         path = PathManager.GetBasePath() + BenchmarkType.DIML.name + '/'

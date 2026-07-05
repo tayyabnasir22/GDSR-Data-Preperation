@@ -93,7 +93,8 @@ class ProcessingSUN:
             minmax_list[i,1] = d_min
             
             # normalize to [0,1]
-            norm_depths[i] = (d - d_min) / (d_max - d_min)
+            rang = d_max - d_min
+            norm_depths[i] = 0.0 if rang < 1e-6 else (d - d_min) / (rang)
 
         return norm_depths, minmax_list
     
@@ -156,7 +157,7 @@ class ProcessingSUN:
             mask_mm[start:end] = masks
 
             # 2.5. Clip the depths between 0.1 and 10 m
-            depth_mapsC = depth_mapsT#np.clip(depth_mapsT, 0.1, 6.0)
+            depth_mapsC = np.clip(depth_mapsT, 0.1, 8.0)
             depthC_mm[start:end] = depth_mapsC
 
             # 2.6. Generate min max normalized verison of the depth, and min max maps
