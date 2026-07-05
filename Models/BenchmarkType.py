@@ -10,3 +10,4 @@ class BenchmarkType(Enum):
     SUNRGBD = "SUNRGBD"
     DIML = "DIML"
     DIODE = "DIODE"
+    SINTEL = "SINTEL"
