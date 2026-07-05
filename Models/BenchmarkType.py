@@ -7,3 +7,4 @@ class BenchmarkType(Enum):
     LU = 'LU'
     MIDDLE = "MIDDLE"
     HYPERSIM = "HYPERSIM"
+    SUNRGBD = "SUNRGBD"
