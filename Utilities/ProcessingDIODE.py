@@ -63,24 +63,64 @@ class ProcessingDIODE:
 
         return np.stack(rgb_images), np.stack(depth_images)
 
+    # @staticmethod
+    # def _NormalizeDepth(depth_maps):
+    #     # Normalize Depths and generate min max map
+    #     num_samples = depth_maps.shape[0]
+    #     norm_depths = np.zeros_like(depth_maps, dtype=np.float32)
+    #     minmax_list = np.zeros((num_samples,2), dtype=np.float32)
+
+    #     for i in range(num_samples):
+    #         d = depth_maps[i].astype(np.float32)
+    #         d_min = d.min()
+    #         d_max = d.max()
+            
+    #         # store max is first element and min is second
+    #         minmax_list[i,0] = d_max
+    #         minmax_list[i,1] = d_min
+            
+    #         # normalize to [0,1]
+    #         norm_depths[i] = (d - d_min) / (d_max - d_min)
+
+    #     return norm_depths, minmax_list
+    
     @staticmethod
-    def _NormalizeDepth(depth_maps):
-        # Normalize Depths and generate min max map
+    def _NormalizeDepth(depth_maps, masks, min_depth=0.6, max_depth=50.0,
+                        pct=99.0, eps=1e-6):
+        """Per-frame min-max normalisation over VALID pixels only.
+
+        - stats are taken from the file validity mask ∩ [min_depth, max_depth]
+        - the upper bound is capped at the masked `pct`-th percentile so a few
+        far returns don't compress the useful range into the bottom of [0,1]
+        - stored (max, min) are the values actually used, so denormalising a
+        prediction back to metres stays consistent
+        """
         num_samples = depth_maps.shape[0]
         norm_depths = np.zeros_like(depth_maps, dtype=np.float32)
-        minmax_list = np.zeros((num_samples,2), dtype=np.float32)
+        minmax_list = np.zeros((num_samples, 2), dtype=np.float32)
 
         for i in range(num_samples):
             d = depth_maps[i].astype(np.float32)
-            d_min = d.min()
-            d_max = d.max()
-            
-            # store max is first element and min is second
-            minmax_list[i,0] = d_max
-            minmax_list[i,1] = d_min
-            
-            # normalize to [0,1]
-            norm_depths[i] = (d - d_min) / (d_max - d_min)
+            m = masks[i]
+
+            if m.any():
+                v = d[m]
+                d_min = float(v.min())
+                d_max = float(min(max_depth, np.percentile(v, pct)))  # trim tail
+                if d_max <= d_min:                                    # degenerate
+                    d_max = d_min
+            else:
+                d_min = d_max = 0.0                                   # no valid px
+
+            minmax_list[i, 0] = d_max     # max first
+            minmax_list[i, 1] = d_min     # min second
+
+            rng = d_max - d_min
+            if rng < eps:
+                norm_depths[i] = 0.0
+            else:
+                dc = np.clip(d, d_min, d_max)          # fold out-of-range into bounds
+                norm_depths[i] = (dc - d_min) / rng
 
         return norm_depths, minmax_list
     
