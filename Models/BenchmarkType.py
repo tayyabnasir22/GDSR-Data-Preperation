@@ -6,3 +6,4 @@ class BenchmarkType(Enum):
     TOFDSRD = "TOFDSRD"
     LU = 'LU'
     MIDDLE = "MIDDLE"
+    HYPERSIM = "HYPERSIM"

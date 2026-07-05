@@ -2,13 +2,14 @@ from Utilities.PathManager import PathManager
 from Utilities.ProcessingNYUMat import ProcessingNYUMat
 from Utilities.ProcessingRGBDD import ProcessingRGBDD
 from Utilities.ProcessingTOFDSR import ProcessingTOFDSR
+from Utilities.ProcessingHypersim import ProcessingHypersim
 import sys
 
 def main():
     ProcessingNYUMat.GenerateNPYFiles()
     ProcessingRGBDD.GenerateNPYFiles()
     ProcessingTOFDSR.GenerateNPYFiles()
-    
+    ProcessingHypersim.GenerateNPYFiles()
     
 if __name__ == '__main__':
     argsLen = len(sys.argv) - 1
