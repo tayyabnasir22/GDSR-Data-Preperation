@@ -81,7 +81,7 @@ class ProcessingDIODE:
             minmax_list[i,1] = d_min
             
             # normalize to [0,1]
-            norm_depths[i] = (d - d_min) / (d_max - d_min)
+            norm_depths[i] = (d - d_min) / (d_max)
 
         return norm_depths, minmax_list
     
