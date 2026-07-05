@@ -6,6 +6,7 @@ from Utilities.PathManager import PathManager
 import numpy as np
 from PIL import Image
 from numpy.lib.format import open_memmap
+from Utilities.MeanMax import MeanMax
 
 class ProcessingDIODE:
     BASE = PathManager.GetBasePath() + 'DIODE_Inp/indoors' # No backslash
@@ -72,8 +73,8 @@ class ProcessingDIODE:
 
         for i in range(num_samples):
             d = depth_maps[i].astype(np.float32)
-            d_min = d.min()
-            d_max = d.max()
+            d_min = MeanMax.means['didoe']
+            d_max = MeanMax.maxs['didoe']
             
             # store max is first element and min is second
             minmax_list[i,0] = d_max
@@ -100,7 +101,7 @@ class ProcessingDIODE:
         return images
 
     @staticmethod
-    def _GenerateDepthMaskBatch(depth_maps, min_depth=0.6, max_depth=10):
+    def _GenerateDepthMaskBatch(depth_maps, min_depth=0.6, max_depth=MeanMax.maxs['didoe']):
         mask = (depth_maps >= min_depth) & (depth_maps <= max_depth)
         return mask
 
