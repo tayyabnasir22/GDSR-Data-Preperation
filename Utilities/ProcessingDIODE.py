@@ -100,7 +100,7 @@ class ProcessingDIODE:
         return images
 
     @staticmethod
-    def _GenerateDepthMaskBatch(depth_maps, min_depth=0.5, max_depth=7.0):
+    def _GenerateDepthMaskBatch(depth_maps, min_depth=0.6, max_depth=50.0):
         mask = (depth_maps >= min_depth) & (depth_maps <= max_depth)
         return mask
 
