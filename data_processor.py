@@ -3,22 +3,15 @@ from Utilities.ProcessingNYUMat import ProcessingNYUMat
 from Utilities.ProcessingRGBDD import ProcessingRGBDD
 from Utilities.ProcessingTOFDSR import ProcessingTOFDSR
 from Utilities.ProcessingHypersim import ProcessingHypersim
-from Utilities.ProcessingSUN import ProcessingSUN
 from Utilities.ProcessingDIML import ProcessingDIML
-from Utilities.ProcessingDIDOE import ProcessingDIDOE
-from Utilities.ProcessingSINTEL import ProcessingSINTEL
 import sys
 
 def main():
-    # ProcessingNYUMat.GenerateNPYFiles()
-    # ProcessingRGBDD.GenerateNPYFiles()
-    # ProcessingTOFDSR.GenerateNPYFiles()
-    # ProcessingHypersim.GenerateNPYFiles()
-    # ProcessingSUN.GenerateNPYFiles()
-    # ProcessingDIML.GenerateNPYFiles()
-    # ProcessingDIDOE.GenerateNPYFiles()
-
-    ProcessingSINTEL.GenerateNPYFiles()
+    ProcessingNYUMat.GenerateNPYFiles()
+    ProcessingRGBDD.GenerateNPYFiles()
+    ProcessingTOFDSR.GenerateNPYFiles()
+    ProcessingHypersim.GenerateNPYFiles()
+    ProcessingDIML.GenerateNPYFiles()
     
 if __name__ == '__main__':
     argsLen = len(sys.argv) - 1
