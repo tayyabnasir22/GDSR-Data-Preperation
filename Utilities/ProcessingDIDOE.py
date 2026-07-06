@@ -8,7 +8,7 @@ from PIL import Image
 from numpy.lib.format import open_memmap
 from Utilities.MeanMax import MeanMax
 
-class ProcessingDIODE:
+class ProcessingDIDOE:
     BASE = PathManager.GetBasePath() + 'DIODE_Inp/indoors' # No backslash
 
     @staticmethod
@@ -43,7 +43,7 @@ class ProcessingDIODE:
 
     @staticmethod
     def _LoadPaths():
-        return ProcessingDIODE._GetPairs(ProcessingDIODE.BASE)
+        return ProcessingDIDOE._GetPairs(ProcessingDIDOE.BASE)
 
     @staticmethod
     def _LoadAllImages(paths):
@@ -122,7 +122,7 @@ class ProcessingDIODE:
             # 2.1. pick the batch and load data
             end = min(start + batch_size, N)
             paths = pairs[start:end]
-            imagesT, depth_mapsT = ProcessingDIODE._LoadAllImages(paths)
+            imagesT, depth_mapsT = ProcessingDIDOE._LoadAllImages(paths)
 
             # 2.2. Store the base image and depth            
             imagesT = np.transpose(imagesT, (0, -1, 1 ,2))
@@ -130,13 +130,13 @@ class ProcessingDIODE:
             depthT_mm[start:end]  = depth_mapsT
 
             # 2.3. Normalize RGB using imagenet weights
-            imagesN = ProcessingDIODE._NormalizeRGB(imagesT)
-            imagesS = ProcessingDIODE._StandardizeRGB(imagesN)
+            imagesN = ProcessingDIDOE._NormalizeRGB(imagesT)
+            imagesS = ProcessingDIDOE._StandardizeRGB(imagesN)
             imagesN_mm[start:end] = imagesN
             imagesS_mm[start:end] = imagesS
 
             # 2.4. Generate a mask for depth pixel out of range
-            masks = ProcessingDIODE._GenerateDepthMaskBatch(depth_mapsT)
+            masks = ProcessingDIDOE._GenerateDepthMaskBatch(depth_mapsT)
             mask_mm[start:end] = masks
 
             # 2.5. Clip the depths between 0.1 and 10 m
@@ -144,18 +144,18 @@ class ProcessingDIODE:
             depthC_mm[start:end] = depth_mapsC
 
             # 2.6. Generate min max normalized verison of the depth, and min max maps
-            depth_mapsN, minmax_list = ProcessingDIODE._NormalizeDepth(depth_mapsC)
+            depth_mapsN, minmax_list = ProcessingDIDOE._NormalizeDepth(depth_mapsC)
             depthN_mm[start:end] = depth_mapsN
             minmax_mm[start:end] = minmax_list
 
     @staticmethod
     def GenerateNPYFiles(batch_size: int = 32):
         # 1. Load data paths
-        test_pairs = ProcessingDIODE._LoadPaths()
+        test_pairs = ProcessingDIDOE._LoadPaths()
 
         # 2. Create the output path
-        path = PathManager.GetBasePath() + BenchmarkType.DIODE.name + '/'
+        path = PathManager.GetBasePath() + BenchmarkType.DIDOE.name + '/'
         DirectoryHelper.ResetFolder(path)
 
         # 3. Process the data
-        ProcessingDIODE.ProcessBatches(test_pairs, 'test', path, batch_size)
+        ProcessingDIDOE.ProcessBatches(test_pairs, 'test', path, batch_size)

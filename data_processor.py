@@ -5,7 +5,7 @@ from Utilities.ProcessingTOFDSR import ProcessingTOFDSR
 from Utilities.ProcessingHypersim import ProcessingHypersim
 from Utilities.ProcessingSUN import ProcessingSUN
 from Utilities.ProcessingDIML import ProcessingDIML
-from Utilities.ProcessingDIODE import ProcessingDIODE
+from Utilities.ProcessingDIDOE import ProcessingDIDOE
 from Utilities.ProcessingSINTEL import ProcessingSINTEL
 import sys
 
@@ -16,7 +16,7 @@ def main():
     # ProcessingHypersim.GenerateNPYFiles()
     # ProcessingSUN.GenerateNPYFiles()
     # ProcessingDIML.GenerateNPYFiles()
-    # ProcessingDIODE.GenerateNPYFiles()
+    # ProcessingDIDOE.GenerateNPYFiles()
 
     ProcessingSINTEL.GenerateNPYFiles()
     

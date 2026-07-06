@@ -9,5 +9,5 @@ class BenchmarkType(Enum):
     HYPERSIM = "HYPERSIM"
     SUNRGBD = "SUNRGBD"
     DIML = "DIML"
-    DIODE = "DIODE"
+    DIDOE = "DIDOE"
     SINTEL = "SINTEL"
