@@ -3,6 +3,7 @@ from Utilities.ProcessingNYUMat import ProcessingNYUMat
 from Utilities.ProcessingRGBDD import ProcessingRGBDD
 from Utilities.ProcessingTOFDSR import ProcessingTOFDSR
 from Utilities.ProcessingHypersim import ProcessingHypersim
+from Utilities.ProcessingDIML import ProcessingDIML
 import sys
 
 def main():
@@ -10,6 +11,7 @@ def main():
     ProcessingRGBDD.GenerateNPYFiles()
     ProcessingTOFDSR.GenerateNPYFiles()
     ProcessingHypersim.GenerateNPYFiles()
+    ProcessingDIML.GenerateNPYFiles()
     
 if __name__ == '__main__':
     argsLen = len(sys.argv) - 1
