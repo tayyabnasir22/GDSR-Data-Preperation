@@ -65,25 +65,21 @@ class ProcessingDIODE:
         return np.stack(rgb_images), np.stack(depth_images)
 
     @staticmethod
-    def _NormalizeDepth(depth_maps):
-        # Normalize Depths and generate min max map
-        num_samples = depth_maps.shape[0]
-        norm_depths = np.zeros_like(depth_maps, dtype=np.float32)
-        minmax_list = np.zeros((num_samples,2), dtype=np.float32)
-
-        for i in range(num_samples):
+    def _NormalizeDepth(depth_maps, lo=0.6, hi=10.0):          # pass the RAW depth + the range
+        num  = depth_maps.shape[0]
+        norm = np.zeros_like(depth_maps, dtype=np.float32)
+        minmax = np.zeros((num, 2), dtype=np.float32)
+        for i in range(num):
             d = depth_maps[i].astype(np.float32)
-            d_min = MeanMax.means['didoe']
-            d_max = MeanMax.maxs['didoe']
-            
-            # store max is first element and min is second
-            minmax_list[i,0] = d_max
-            minmax_list[i,1] = d_min
-            
-            # normalize to [0,1]
-            norm_depths[i] = (d - d_min) / (d_max)
-
-        return norm_depths, minmax_list
+            v = np.isfinite(d) & (d > lo) & (d < hi)   # strict: excludes holes, floor, cap, sky
+            if not v.any():
+                minmax[i] = (hi, lo); continue
+            dv = d[v]
+            d_min, d_max = float(dv.min()), float(dv.max())
+            minmax[i, 0], minmax[i, 1] = d_max, d_min          # (max, min), unchanged layout
+            rang = d_max - d_min
+            norm[i] = 0.0 if rang < 1e-6 else np.clip((d - d_min) / rang, 0.0, 1.0)
+        return norm, minmax
     
     @staticmethod
     def _NormalizeRGB(images):
@@ -101,7 +97,7 @@ class ProcessingDIODE:
         return images
 
     @staticmethod
-    def _GenerateDepthMaskBatch(depth_maps, min_depth=0.6, max_depth=MeanMax.maxs['didoe']):
+    def _GenerateDepthMaskBatch(depth_maps, min_depth=0.6, max_depth=10.0):
         mask = (depth_maps >= min_depth) & (depth_maps <= max_depth)
         return mask
 
