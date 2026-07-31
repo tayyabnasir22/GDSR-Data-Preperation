@@ -7,7 +7,7 @@ class BenchmarkType(Enum):
     LU = 'LU'
     MIDDLE = "MIDDLE"
     HYPERSIM = "HYPERSIM"
-    SUNRGBD = "SUNRGBD"
     DIML = "DIML"
-    DIDOE = "DIDOE"
-    SINTEL = "SINTEL"
+
+    RGBDDReal = 'RGBDDReal'
+    TOFDSRDReal = "TOFDSRDReal"

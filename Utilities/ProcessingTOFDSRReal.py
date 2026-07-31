@@ -14,6 +14,7 @@ class ProcessingTOFDSRReal:
     # HR resolution (RGB / HR GT depth). The real LR depth is bicubic-upsampled
     # to this grid, matching the TOFDSR benchmark protocol (DORNet).
     HR_H, HR_W = 384, 512
+    LR_H, LR_W = 144, 192
 
     @staticmethod
     def _GetPairs(base_path: str, base: str):
@@ -53,7 +54,7 @@ class ProcessingTOFDSRReal:
             h, w = depth_hr.shape
 
             # Load real LR Depth, bicubic-upsample to the GT grid, convert to meters
-            depth_lr = np.array(Image.open(depth_lr_path).resize((w, h), Image.BICUBIC)) / 1000.0
+            depth_lr = np.array(Image.open(depth_lr_path)) / 1000.0
 
             rgb_images.append(rgb)
             depth_hr_images.append(depth_hr)
@@ -126,6 +127,7 @@ class ProcessingTOFDSRReal:
         # 1. Create memmaps (disk-backed arrays)
         N = len(pairs)
         H, W = ProcessingTOFDSRReal.HR_H, ProcessingTOFDSRReal.HR_W
+        LR_H, LR_W = ProcessingTOFDSRReal.LR_H, ProcessingTOFDSRReal.LR_W
 
         imagesT_mm = open_memmap(save_path + prefix + '_images_split.npy', mode='w+', dtype=np.uint8, shape=(N, 3, H, W))
         imagesN_mm = open_memmap(save_path + prefix + '_images_norm_split.npy', mode='w+', dtype=np.float32, shape=(N, 3, H, W))
@@ -135,12 +137,12 @@ class ProcessingTOFDSRReal:
         depthC_mm  = open_memmap(save_path + prefix + '_depths_clipped_split.npy', mode='w+', dtype=np.float32, shape=(N, H, W))
         depthN_mm  = open_memmap(save_path + prefix + '_depths_norm_split.npy', mode='w+', dtype=np.float32, shape=(N, H, W))
 
-        depthLR_T_mm = open_memmap(save_path + prefix + '_depths_lr_split.npy', mode='w+', dtype=np.float32, shape=(N, H, W))
-        depthLR_C_mm = open_memmap(save_path + prefix + '_depths_lr_clipped_split.npy', mode='w+', dtype=np.float32, shape=(N, H, W))
-        depthLR_N_mm = open_memmap(save_path + prefix + '_depths_lr_norm_split.npy', mode='w+', dtype=np.float32, shape=(N, H, W))
+        depthLR_T_mm = open_memmap(save_path + prefix + '_depths_lr_split.npy', mode='w+', dtype=np.float32, shape=(N, LR_H, LR_W))
+        depthLR_C_mm = open_memmap(save_path + prefix + '_depths_lr_clipped_split.npy', mode='w+', dtype=np.float32, shape=(N, LR_H, LR_W))
+        depthLR_N_mm = open_memmap(save_path + prefix + '_depths_lr_norm_split.npy', mode='w+', dtype=np.float32, shape=(N, LR_H, LR_W))
 
         mask_mm    = open_memmap(save_path + prefix + '_mask_split.npy', mode='w+', dtype=bool, shape=(N, H, W))
-        maskLR_mm  = open_memmap(save_path + prefix + '_mask_lr_split.npy', mode='w+', dtype=bool, shape=(N, H, W))
+        maskLR_mm  = open_memmap(save_path + prefix + '_mask_lr_split.npy', mode='w+', dtype=bool, shape=(N, LR_H, LR_W))
         minmax_mm  = open_memmap(save_path + prefix + '_minmax_split.npy', mode='w+', dtype=np.float32, shape=(N, 2))
 
         # 2. Process the batches

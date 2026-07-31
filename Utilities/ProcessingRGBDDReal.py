@@ -9,7 +9,7 @@ from numpy.lib.format import open_memmap
 class ProcessingRGBDDReal:
     # HR resolution (RGB / HR GT depth) and LR resolution (phone ToF depth)
     HR_H, HR_W = 384, 512
-    LR_H, LR_W = 192, 256
+    LR_H, LR_W = 144, 192
 
     @staticmethod
     def _LoadPairPaths(path: str):
