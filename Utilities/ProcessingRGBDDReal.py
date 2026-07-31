@@ -6,24 +6,31 @@ import os
 from PIL import Image
 from numpy.lib.format import open_memmap
 
-class ProcessingRGBDD:
+class ProcessingRGBDDReal:
+    # HR resolution (RGB / HR GT depth) and LR resolution (phone ToF depth)
+    HR_H, HR_W = 384, 512
+    LR_H, LR_W = 192, 256
+
     @staticmethod
     def _LoadPairPaths(path: str):
         pairs = {}
         for index, obj in enumerate(os.walk(path)):
             root, _, files = obj
-            depth = None
+            depth_hr = None
+            depth_lr = None
             rgb = None
             for file in files:
                 if file.endswith('HR_gt.png'):
-                    depth = os.path.join(root, file)
+                    depth_hr = os.path.join(root, file)
+                if file.endswith('LR_fill_depth.png'):
+                    depth_lr = os.path.join(root, file)
                 if file.endswith('RGB.jpg'):
                     rgb = os.path.join(root, file)
 
-            if rgb is None or depth is None:
+            if rgb is None or depth_hr is None or depth_lr is None:
                 print(root)
             else:
-                pairs[index] = (depth, rgb)
+                pairs[index] = (depth_hr, rgb, depth_lr)
 
         return pairs
 
@@ -58,7 +65,29 @@ class ProcessingRGBDD:
             norm_depths[i] = (d - d_min) / (d_max - d_min)
 
         return norm_depths, minmax_list
-    
+
+    @staticmethod
+    def _NormalizeDepthWithMinMax(depth_maps, minmax_list):
+        # Normalize depths using an externally provided per-sample (max, min).
+        # For the real-world setting the HR ground truth is normalized with the
+        # LR depth statistics so that predictions can be de-normalized with the
+        # same values that were available at inference time.
+        num_samples = depth_maps.shape[0]
+        norm_depths = np.zeros_like(depth_maps, dtype=np.float32)
+
+        for i in range(num_samples):
+            d = depth_maps[i].astype(np.float32)
+            d_max = minmax_list[i, 0]
+            d_min = minmax_list[i, 1]
+
+            if d_max - d_min == 0:
+                print('Bug')
+
+            norm_depths[i] = (d - d_min) / (d_max - d_min)
+
+        # HR GT can slightly exceed the LR min/max range -> keep values in [0,1]
+        return np.clip(norm_depths, 0.0, 1.0)
+
     @staticmethod
     def _NormalizeRGB(images):
         # Normalize RGB
@@ -76,59 +105,77 @@ class ProcessingRGBDD:
     
     @staticmethod
     def ProcessRGBs(rgbs):
-        imagesN = ProcessingRGBDD._NormalizeRGB(rgbs)
-        imagesS = ProcessingRGBDD._StandardizeRGB(imagesN)
+        imagesN = ProcessingRGBDDReal._NormalizeRGB(rgbs)
+        imagesS = ProcessingRGBDDReal._StandardizeRGB(imagesN)
 
         return imagesN, imagesS
 
     @staticmethod
-    def ProcessDepths(depths, low: float, high: float):
-        # Generate the mask and Clip depth
-        masks, depth_mapsC = ProcessingRGBDD._GenerateDepthMaskBatch(depths, low, high)
+    def ProcessDepths(depths_hr, depths_lr, low: float, high: float):
+        # 1. Generate the masks and clip both HR and LR depth with the same range
+        masks, depth_mapsC = ProcessingRGBDDReal._GenerateDepthMaskBatch(depths_hr, low, high)
+        masksLR, depth_mapsLR_C = ProcessingRGBDDReal._GenerateDepthMaskBatch(depths_lr, low, high)
 
-        # Generate the normalized version, and min, max
-        depth_mapsN, minmax_list = ProcessingRGBDD._NormalizeDepth(depth_mapsC)
+        # 2. Normalize the LR depth and keep its min/max (this is what is
+        #    actually available in the real-world scenario)
+        depth_mapsLR_N, minmax_list = ProcessingRGBDDReal._NormalizeDepth(depth_mapsLR_C)
 
-        return masks, depth_mapsC, depth_mapsN, minmax_list
+        # 3. Normalize the HR ground truth with the LR min/max so training
+        #    targets and de-normalization are consistent with the LR input
+        depth_mapsN = ProcessingRGBDDReal._NormalizeDepthWithMinMax(depth_mapsC, minmax_list)
+
+        return masks, depth_mapsC, depth_mapsN, masksLR, depth_mapsLR_C, depth_mapsLR_N, minmax_list
 
     @staticmethod
     def _LoadAllImages(paths):
         rgb_images = []
-        depth_images = []
+        depth_hr_images = []
+        depth_lr_images = []
 
-        for depth_path, rgb_path in paths:
+        for depth_hr_path, rgb_path, depth_lr_path in paths:
             # Load RGB (H, W, 3)
             rgb = np.array(Image.open(rgb_path).convert("RGB"))
 
-            # Load Depth (H, W)
-            depth = np.array(Image.open(depth_path)) / 1000.0
+            # Load HR Depth (H, W) in meters
+            depth_hr = np.array(Image.open(depth_hr_path)) / 1000.0
+
+            # Load real LR Depth from the phone ToF sensor (H/2, W/2) in meters
+            depth_lr = np.array(Image.open(depth_lr_path)) / 1000.0
 
             rgb_images.append(rgb)
-            depth_images.append(depth)
+            depth_hr_images.append(depth_hr)
+            depth_lr_images.append(depth_lr)
 
-        return np.stack(rgb_images), np.stack(depth_images)
+        return np.stack(rgb_images), np.stack(depth_hr_images), np.stack(depth_lr_images)
 
     @staticmethod
     def _InitDataDict(path: str, N: int, prefix: str = 'train'):
+        HR_H, HR_W = ProcessingRGBDDReal.HR_H, ProcessingRGBDDReal.HR_W
+        LR_H, LR_W = ProcessingRGBDDReal.LR_H, ProcessingRGBDDReal.LR_W
         return {
-                "imagesT": open_memmap(path + f"{prefix}_images_split.npy", 'w+', np.uint8, (N, 3, 384, 512)),
-                "imagesN": open_memmap(path + f"{prefix}_images_norm_split.npy", 'w+', np.float32, (N, 3, 384, 512)),
-                "imagesS": open_memmap(path + f"{prefix}_images_stand_split.npy", 'w+', np.float32, (N, 3, 384, 512)),
+                "imagesT": open_memmap(path + f"{prefix}_images_split.npy", 'w+', np.uint8, (N, 3, HR_H, HR_W)),
+                "imagesN": open_memmap(path + f"{prefix}_images_norm_split.npy", 'w+', np.float32, (N, 3, HR_H, HR_W)),
+                "imagesS": open_memmap(path + f"{prefix}_images_stand_split.npy", 'w+', np.float32, (N, 3, HR_H, HR_W)),
 
-                "depthT": open_memmap(path + f"{prefix}_depths_split.npy", 'w+', np.float32, (N, 384, 512)),
-                "depth_mapsC": open_memmap(path + f"{prefix}_depths_clipped_split.npy", 'w+', np.float32, (N, 384, 512)),
-                "depth_mapsN": open_memmap(path + f"{prefix}_depths_norm_split.npy", 'w+', np.float32, (N, 384, 512)),
+                "depthT": open_memmap(path + f"{prefix}_depths_split.npy", 'w+', np.float32, (N, HR_H, HR_W)),
+                "depth_mapsC": open_memmap(path + f"{prefix}_depths_clipped_split.npy", 'w+', np.float32, (N, HR_H, HR_W)),
+                "depth_mapsN": open_memmap(path + f"{prefix}_depths_norm_split.npy", 'w+', np.float32, (N, HR_H, HR_W)),
 
-                "masks": open_memmap(path + f"{prefix}_mask_split.npy", 'w+', bool, (N, 384, 512)),
+                "depthLR_T": open_memmap(path + f"{prefix}_depths_lr_split.npy", 'w+', np.float32, (N, LR_H, LR_W)),
+                "depthLR_C": open_memmap(path + f"{prefix}_depths_lr_clipped_split.npy", 'w+', np.float32, (N, LR_H, LR_W)),
+                "depthLR_N": open_memmap(path + f"{prefix}_depths_lr_norm_split.npy", 'w+', np.float32, (N, LR_H, LR_W)),
+
+                "masks": open_memmap(path + f"{prefix}_mask_split.npy", 'w+', bool, (N, HR_H, HR_W)),
+                "masksLR": open_memmap(path + f"{prefix}_mask_lr_split.npy", 'w+', bool, (N, LR_H, LR_W)),
                 "minmax_list": open_memmap(path + f"{prefix}_minmax_split.npy", 'w+', np.float32, (N, 2)),
             }
 
     @staticmethod
     def ProcessData(pairs: list[tuple], path: str, batch_size: int, prefix: str = 'train'):
-        # 1. Count iput exmaples and init the required np arrays on disk
+        # 1. Count input examples and init the required np arrays on disk
         N = len(pairs)
         print('Processing ' + prefix + '. Total examples: ', N)
-        collect = ProcessingRGBDD._InitDataDict(path, N, prefix)
+        collect = ProcessingRGBDDReal._InitDataDict(path, N, prefix)
 
         # 2. For each batch save the data in the collect files
         for start in range(0, N, batch_size):
@@ -139,19 +186,27 @@ class ProcessingRGBDD:
             paths, lows, highs = zip(*batch)
 
             # 2.2. Load and process images
-            rgbs, depths = ProcessingRGBDD._LoadAllImages(paths)
-            rgbs = np.transpose(rgbs, (0, -1, 1 ,2))
-            imagesN, imagesS = ProcessingRGBDD.ProcessRGBs(rgbs)
-            masks, depth_mapsC, depth_mapsN, minmax_list = ProcessingRGBDD.ProcessDepths(depths, lows, highs)
+            rgbs, depths_hr, depths_lr = ProcessingRGBDDReal._LoadAllImages(paths)
+            rgbs = np.transpose(rgbs, (0, -1, 1, 2))
+            imagesN, imagesS = ProcessingRGBDDReal.ProcessRGBs(rgbs)
+            masks, depth_mapsC, depth_mapsN, masksLR, depth_mapsLR_C, depth_mapsLR_N, minmax_list = \
+                ProcessingRGBDDReal.ProcessDepths(depths_hr, depths_lr, lows, highs)
 
             # 2.3. Save data
             collect['imagesT'][start:end] = rgbs
-            collect['depthT'][start:end] = depths
             collect['imagesN'][start:end] = imagesN
             collect['imagesS'][start:end] = imagesS
-            collect['masks'][start:end] = masks
+
+            collect['depthT'][start:end] = depths_hr
             collect['depth_mapsC'][start:end] = depth_mapsC
             collect['depth_mapsN'][start:end] = depth_mapsN
+
+            collect['depthLR_T'][start:end] = depths_lr
+            collect['depthLR_C'][start:end] = depth_mapsLR_C
+            collect['depthLR_N'][start:end] = depth_mapsLR_N
+
+            collect['masks'][start:end] = masks
+            collect['masksLR'][start:end] = masksLR
             collect['minmax_list'][start:end] = minmax_list
 
     @staticmethod
@@ -163,16 +218,16 @@ class ProcessingRGBDD:
         plants_test = PathManager.GetBasePath() + 'RGBDD-Full/plants/plants_test'
         portraits_train = PathManager.GetBasePath() + 'RGBDD-Full/portraits/portraits_train'
         portraits_test = PathManager.GetBasePath() + 'RGBDD-Full/portraits/portraits_test'
-        
-        model_train_pairs = ProcessingRGBDD._LoadPairPaths(model_train)
-        model_test_pairs = ProcessingRGBDD._LoadPairPaths(model_test)
-        plants_train_pairs = ProcessingRGBDD._LoadPairPaths(plants_train)
-        plants_test_pairs = ProcessingRGBDD._LoadPairPaths(plants_test)
-        portraits_train_pairs = ProcessingRGBDD._LoadPairPaths(portraits_train)
-        portraits_test_pairs = ProcessingRGBDD._LoadPairPaths(portraits_test)
+
+        model_train_pairs = ProcessingRGBDDReal._LoadPairPaths(model_train)
+        model_test_pairs = ProcessingRGBDDReal._LoadPairPaths(model_test)
+        plants_train_pairs = ProcessingRGBDDReal._LoadPairPaths(plants_train)
+        plants_test_pairs = ProcessingRGBDDReal._LoadPairPaths(plants_test)
+        portraits_train_pairs = ProcessingRGBDDReal._LoadPairPaths(portraits_train)
+        portraits_test_pairs = ProcessingRGBDDReal._LoadPairPaths(portraits_test)
 
         # 2. Init the output path
-        path = PathManager.GetBasePath() + BenchmarkType.RGBDD.name + '/'
+        path = PathManager.GetBasePath() + BenchmarkType.RGBDDReal.name + '/'
         DirectoryHelper.ResetFolder(path)
 
         # 3. Merge training examples
@@ -202,5 +257,5 @@ class ProcessingRGBDD:
         print("Test samples:", test_count)
 
         # 5. Process data
-        ProcessingRGBDD.ProcessData(train_pairs, path, batch_size, 'train')
-        ProcessingRGBDD.ProcessData(test_pairs, path, batch_size, 'test')
+        ProcessingRGBDDReal.ProcessData(train_pairs, path, batch_size, 'train')
+        ProcessingRGBDDReal.ProcessData(test_pairs, path, batch_size, 'test')
