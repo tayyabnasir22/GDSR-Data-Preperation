@@ -4,14 +4,19 @@ from Utilities.ProcessingRGBDD import ProcessingRGBDD
 from Utilities.ProcessingTOFDSR import ProcessingTOFDSR
 from Utilities.ProcessingHypersim import ProcessingHypersim
 from Utilities.ProcessingDIML import ProcessingDIML
+from Utilities.ProcessingRGBDDReal import ProcessingRGBDDReal
+from Utilities.ProcessingTOFDSRReal import ProcessingTOFDSRReal
 import sys
 
 def main():
-    ProcessingNYUMat.GenerateNPYFiles()
-    ProcessingRGBDD.GenerateNPYFiles()
-    ProcessingTOFDSR.GenerateNPYFiles()
-    ProcessingHypersim.GenerateNPYFiles()
-    ProcessingDIML.GenerateNPYFiles()
+    # ProcessingNYUMat.GenerateNPYFiles()
+    # ProcessingRGBDD.GenerateNPYFiles()
+    # ProcessingTOFDSR.GenerateNPYFiles()
+    # ProcessingHypersim.GenerateNPYFiles()
+    # ProcessingDIML.GenerateNPYFiles()
+
+    # ProcessingRGBDDReal.GenerateNPYFiles()
+    ProcessingTOFDSRReal.GenerateNPYFiles()
     
 if __name__ == '__main__':
     argsLen = len(sys.argv) - 1
