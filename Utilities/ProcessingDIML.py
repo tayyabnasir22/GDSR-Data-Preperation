@@ -32,7 +32,6 @@ class ProcessingDIML:
         pairs = []
         # Here implicitly it will be checked if every pair has a valid depth and rgb path, else there should be an error
         for k, v in u.items():
-            print(v)
             pairs.append({
                 'rgb': v['rgb'],
                 'depth': v['depth']

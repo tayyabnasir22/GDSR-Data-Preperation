@@ -26,7 +26,7 @@ def DownloadAndExtract(gdrive_url, name = "downloaded_file.zip", extract = True)
         print("Zip file removed.")
 
 def main():
-    # Replaec the drive link with the base dataset files
+    # Replace the drive link with the base dataset files
 
     # NYU_V2 - Should point to the .mat file, and not the compressed/zip file
     DownloadAndExtract('https://drive.google.com/uc?id=##########', 'nyu_depth_v2_labeled.mat', False)
@@ -40,6 +40,9 @@ def main():
 
     # Hypersim
     DownloadAndExtract('https://drive.google.com/uc?id=1q6R1J67NjCR5CyRy-Q9PBTUobJX_wovj')
+
+    # DIML
+    DownloadAndExtract('https://drive.google.com/uc?id=1M6dy1fa3i8bgl0oZ2e6AAMm4-LySL_3r')
     
 if __name__ == '__main__':
     argsLen = len(sys.argv) - 1
