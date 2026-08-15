@@ -185,6 +185,7 @@ class ProcessingTOFDSRReal:
 
             # 2.7. Normalize the HR GT with the LR min/max so training targets
             #      and de-normalization are consistent with the LR input
+            # Why it's correct. The rule for any normalization is: the statistics you normalize the target with must be recoverable at inference time, because that's what you'll use to denormalize the prediction. At test time you have only the LR depth, so per-sample LR min/max is the only per-sample statistic available. If you normalized GT with its own min/max, training would work, but at inference you'd have no way to map the network's [0,1] output back to meters — the whole pipeline would be broken. So:
             depth_mapsN = ProcessingTOFDSRReal._NormalizeDepthWithMinMax(depth_mapsC, minmax_list)
             depthN_mm[start:end] = depth_mapsN
 
