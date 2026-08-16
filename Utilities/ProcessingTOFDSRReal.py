@@ -16,9 +16,6 @@ class ProcessingTOFDSRReal:
     HR_H, HR_W = 384, 512
     LR_H, LR_W = 144, 192
 
-    DEPTH_MIN_M = 0.0
-    DEPTH_MAX_M = 5.0
-
     @staticmethod
     def _GetPairs(base_path: str, base: str):
         # Each line: rgb_path, gt_path, lr_path (real LR from the phone ToF sensor)
@@ -67,30 +64,31 @@ class ProcessingTOFDSRReal:
 
     @staticmethod
     def _NormalizeDepth(depth_maps):
-        # Normalize depths with the fixed global range used by the reference
-        # dataloader (0 .. 5000 mm -> 0.0 .. 5.0 m) and generate the min/max map.
-        # The per-sample minmax file is kept for a stable de-normalization
-        # interface, but it now stores the fixed (max, min) = (5.0, 0.0) values.
+        # Normalize Depths and generate min max map
         num_samples = depth_maps.shape[0]
- 
-        d_min = ProcessingTOFDSRReal.DEPTH_MIN_M
-        d_max = ProcessingTOFDSRReal.DEPTH_MAX_M
- 
-        norm_depths = (depth_maps.astype(np.float32) - d_min) / (d_max - d_min)
- 
-        minmax_list = np.zeros((num_samples, 2), dtype=np.float32)
-        minmax_list[:, 0] = d_max   # max is first element
-        minmax_list[:, 1] = d_min   # min is second element
- 
+        norm_depths = np.zeros_like(depth_maps, dtype=np.float32)
+        minmax_list = np.zeros((num_samples,2), dtype=np.float32)
+
+        for i in range(num_samples):
+            d = depth_maps[i].astype(np.float32)
+            d_min = d.min()
+            d_max = d.max()
+            
+            # store max is first element and min is second
+            minmax_list[i,0] = d_max
+            minmax_list[i,1] = d_min
+            
+            # normalize to [0,1]
+            norm_depths[i] = (d - d_min) / (d_max - d_min)
+
         return norm_depths, minmax_list
 
     @staticmethod
     def _NormalizeDepthWithMinMax(depth_maps, minmax_list):
         # Normalize depths using an externally provided per-sample (max, min).
-        # With the fixed-range scheme this maps the HR GT with exactly the same
-        # statistics as the LR input, matching the dataloader, which normalizes
-        # both lr and gt with the same fixed (min_out, max_out) range. The
-        # dataloader applies no [0,1] clipping to the GT, so neither do we.
+        # The HR ground truth is normalized with the LR depth statistics so that
+        # predictions can be de-normalized with the values that are actually
+        # available at inference time in the real-world setting.
         num_samples = depth_maps.shape[0]
         norm_depths = np.zeros_like(depth_maps, dtype=np.float32)
 
@@ -100,8 +98,9 @@ class ProcessingTOFDSRReal:
             d_min = minmax_list[i, 1]
 
             norm_depths[i] = (d - d_min) / (d_max - d_min)
- 
-        return norm_depths
+
+        # HR GT can slightly exceed the LR min/max range -> keep values in [0,1]
+        return np.clip(norm_depths, 0.0, 1.0)
 
     @staticmethod
     def _NormalizeRGB(images):
