@@ -62,48 +62,24 @@ class ProcessingTOFDSRReal:
 
         return np.stack(rgb_images), np.stack(depth_hr_images), np.stack(depth_lr_images)
 
-    # Valid depth range used across the TOFDSR benchmark literature (e.g. DORNet)
-    MIN_DEPTH = 0.1
-    MAX_DEPTH = 6.0
-    _EPS = 1e-6
-
     @staticmethod
-    def _NormalizeDepth(depth_maps, valid_masks):
-        # Normalize depths and generate the per-sample (max, min) map.
-        # min/max are computed ONLY over valid pixels: invalid ToF pixels
-        # (e.g. zeros clipped up to MIN_DEPTH) must not contaminate the
-        # normalization statistics.
+    def _NormalizeDepth(depth_maps):
+        # Normalize Depths and generate min max map
         num_samples = depth_maps.shape[0]
         norm_depths = np.zeros_like(depth_maps, dtype=np.float32)
-        minmax_list = np.zeros((num_samples, 2), dtype=np.float32)
+        minmax_list = np.zeros((num_samples,2), dtype=np.float32)
 
         for i in range(num_samples):
             d = depth_maps[i].astype(np.float32)
-            valid = valid_masks[i]
-
-            if valid.any():
-                d_valid = d[valid]
-                d_min = float(d_valid.min())
-                d_max = float(d_valid.max())
-            else:
-                # Degenerate sample with no valid pixels: fall back to the
-                # benchmark clip range so de-normalization stays well-defined.
-                d_min = ProcessingTOFDSRReal.MIN_DEPTH
-                d_max = ProcessingTOFDSRReal.MAX_DEPTH
-
-            # Guard against a constant (or near-constant) depth map, which
-            # would otherwise produce a division by zero / NaNs.
-            if (d_max - d_min) < ProcessingTOFDSRReal._EPS:
-                d_max = d_min + ProcessingTOFDSRReal._EPS
-
-            # store max as first element and min as second
-            minmax_list[i, 0] = d_max
-            minmax_list[i, 1] = d_min
-
-            # normalize to [0,1]; invalid pixels may fall outside the valid
-            # min/max, so clip to keep the array in range (they are excluded
-            # by the mask during training/evaluation anyway)
-            norm_depths[i] = np.clip((d - d_min) / (d_max - d_min), 0.0, 1.0)
+            d_min = d.min()
+            d_max = d.max()
+            
+            # store max is first element and min is second
+            minmax_list[i,0] = d_max
+            minmax_list[i,1] = d_min
+            
+            # normalize to [0,1]
+            norm_depths[i] = (d - d_min) / (d_max - d_min)
 
         return norm_depths, minmax_list
 
@@ -121,10 +97,7 @@ class ProcessingTOFDSRReal:
             d_max = minmax_list[i, 0]
             d_min = minmax_list[i, 1]
 
-            # minmax_list produced by _NormalizeDepth already guarantees
-            # d_max > d_min, but guard anyway in case of external inputs
-            denom = max(d_max - d_min, ProcessingTOFDSRReal._EPS)
-            norm_depths[i] = (d - d_min) / denom
+            norm_depths[i] = (d - d_min) / (d_max - d_min)
 
         # HR GT can slightly exceed the LR min/max range -> keep values in [0,1]
         return np.clip(norm_depths, 0.0, 1.0)
@@ -145,12 +118,7 @@ class ProcessingTOFDSRReal:
         return images
 
     @staticmethod
-    def _GenerateDepthMaskBatch(depth_maps, min_depth=None, max_depth=None):
-        # Valid-pixel mask over the TOFDSR benchmark range [0.1, 6.0] m
-        if min_depth is None:
-            min_depth = ProcessingTOFDSRReal.MIN_DEPTH
-        if max_depth is None:
-            max_depth = ProcessingTOFDSRReal.MAX_DEPTH
+    def _GenerateDepthMaskBatch(depth_maps, min_depth=0.1, max_depth=6.0):
         mask = (depth_maps >= min_depth) & (depth_maps <= max_depth)
         return mask
 
@@ -203,20 +171,15 @@ class ProcessingTOFDSRReal:
             mask_mm[start:end] = masks
             maskLR_mm[start:end] = masksLR
 
-            # 2.5. Clip the depths to the TOFDSR benchmark range [0.1, 6.0] m
-            #      (kept as in existing work; invalid pixels are handled via
-            #      the masks, not by the clip)
-            depth_mapsC = np.clip(depth_mapsT, ProcessingTOFDSRReal.MIN_DEPTH, ProcessingTOFDSRReal.MAX_DEPTH)
-            depth_mapsLR_C = np.clip(depth_mapsLR_T, ProcessingTOFDSRReal.MIN_DEPTH, ProcessingTOFDSRReal.MAX_DEPTH)
+            # 2.5. Clip the depths between 0.1 and 6 m
+            depth_mapsC = np.clip(depth_mapsT, 0.1, 6.0)
+            depth_mapsLR_C = np.clip(depth_mapsLR_T, 0.1, 6.0)
             depthC_mm[start:end] = depth_mapsC
             depthLR_C_mm[start:end] = depth_mapsLR_C
 
             # 2.6. Normalize the LR depth with its own min/max (what is available
-            #      at inference time) and store that min/max. The statistics are
-            #      computed on valid pixels only (mask from the RAW LR depth),
-            #      so zero/out-of-range ToF readings clipped to 0.1 m cannot
-            #      drag d_min down to the clip floor.
-            depth_mapsLR_N, minmax_list = ProcessingTOFDSRReal._NormalizeDepth(depth_mapsLR_C, masksLR)
+            #      at inference time) and store that min/max
+            depth_mapsLR_N, minmax_list = ProcessingTOFDSRReal._NormalizeDepth(depth_mapsLR_C)
             depthLR_N_mm[start:end] = depth_mapsLR_N
             minmax_mm[start:end] = minmax_list
 
