@@ -16,10 +16,6 @@ class ProcessingTOFDSRReal:
     HR_H, HR_W = 384, 512
     LR_H, LR_W = 144, 192
 
-    FIXED_MIN = 0.0
-    FIXED_MAX = 5.0   # matches the TOFDSR protocol (0.1–5 m valid window)
-    CLIP_LOW  = 1e-3  # near zero: holes stay ≈ 0, avoids exact-0 edge cases
-
     @staticmethod
     def _GetPairs(base_path: str, base: str):
         # Each line: rgb_path, gt_path, lr_path (real LR from the phone ToF sensor)
@@ -176,16 +172,15 @@ class ProcessingTOFDSRReal:
             maskLR_mm[start:end] = masksLR
 
             # 2.5. Clip the depths between 0.1 and 6 m
-            depth_mapsC = np.clip(depth_mapsT, ProcessingTOFDSRReal.CLIP_LOW, ProcessingTOFDSRReal.FIXED_MAX)
-            depth_mapsLR_C = np.clip(depth_mapsLR_T, ProcessingTOFDSRReal.CLIP_LOW, ProcessingTOFDSRReal.FIXED_MAX)
-            depthLR_N_mm[start:end] = depth_mapsLR_C / ProcessingTOFDSRReal.FIXED_MAX
-            depthN_mm[start:end] = depth_mapsC / ProcessingTOFDSRReal.FIXED_MAX
-
+            depth_mapsC = np.clip(depth_mapsT, 0.1, 6.0)
+            depth_mapsLR_C = np.clip(depth_mapsLR_T, 0.1, 6.0)
+            depthC_mm[start:end] = depth_mapsC
+            depthLR_C_mm[start:end] = depth_mapsLR_C
 
             # 2.6. Normalize the LR depth with its own min/max (what is available
             #      at inference time) and store that min/max
-            minmax_list = np.zeros((end - start, 2), dtype=np.float32)
-            minmax_list[:, 0] = ProcessingTOFDSRReal.FIXED_MAX
+            depth_mapsLR_N, minmax_list = ProcessingTOFDSRReal._NormalizeDepth(depth_mapsLR_C)
+            depthLR_N_mm[start:end] = depth_mapsLR_N
             minmax_mm[start:end] = minmax_list
 
             # 2.7. Normalize the HR GT with the LR min/max so training targets
