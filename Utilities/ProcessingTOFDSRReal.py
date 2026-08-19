@@ -121,12 +121,12 @@ class ProcessingTOFDSRReal:
         return images
 
     @staticmethod
-    def _GenerateDepthMaskBatch(depth_maps, min_depth, max_depth):
+    def _GenerateDepthMaskBatch(depth_maps, min_depth=0.1, max_depth=6.0):
         mask = (depth_maps >= min_depth) & (depth_maps <= max_depth)
         return mask
 
     @staticmethod
-    def ProcessBatches(pairs: list, prefix: str, save_path: str, batch_size: int, low, high):
+    def ProcessBatches(pairs: list, prefix: str, save_path: str, batch_size: int):
         # 1. Create memmaps (disk-backed arrays)
         N = len(pairs)
         H, W = ProcessingTOFDSRReal.HR_H, ProcessingTOFDSRReal.HR_W
@@ -169,14 +169,14 @@ class ProcessingTOFDSRReal:
             imagesS_mm[start:end] = imagesS
 
             # 2.4. Generate masks for depth pixels out of range (HR GT and real LR)
-            masks = ProcessingTOFDSRReal._GenerateDepthMaskBatch(depth_mapsT, low, high)
-            masksLR = ProcessingTOFDSRReal._GenerateDepthMaskBatch(depth_mapsLR_T, low, high)
+            masks = ProcessingTOFDSRReal._GenerateDepthMaskBatch(depth_mapsT)
+            masksLR = ProcessingTOFDSRReal._GenerateDepthMaskBatch(depth_mapsLR_T)
             mask_mm[start:end] = masks
             maskLR_mm[start:end] = masksLR
 
             # 2.5. Clip the depths between 0.1 and 6 m
-            depth_mapsC = np.clip(depth_mapsT, low, high)
-            depth_mapsLR_C = np.clip(depth_mapsLR_T, low, high)
+            depth_mapsC = np.clip(depth_mapsT, 0.1, 6.0)
+            depth_mapsLR_C = np.clip(depth_mapsLR_T, 0.1, 6.0)
             depthC_mm[start:end] = depth_mapsC
             depthLR_C_mm[start:end] = depth_mapsLR_C
 
@@ -205,5 +205,5 @@ class ProcessingTOFDSRReal:
         DirectoryHelper.ResetFolder(path)
 
         # 3. Process the data
-        ProcessingTOFDSRReal.ProcessBatches(train_pairs, 'train', path, batch_size, low=0.05, high=5.0)
-        ProcessingTOFDSRReal.ProcessBatches(test_pairs, 'test', path, batch_size, low=0.1, high=6.0)
+        ProcessingTOFDSRReal.ProcessBatches(train_pairs, 'train', path, batch_size)
+        ProcessingTOFDSRReal.ProcessBatches(test_pairs, 'test', path, batch_size)
