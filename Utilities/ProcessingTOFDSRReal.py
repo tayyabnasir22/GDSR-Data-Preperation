@@ -97,6 +97,9 @@ class ProcessingTOFDSRReal:
             d_max = minmax_list[i, 0]
             d_min = minmax_list[i, 1]
 
+            if d_max - d_min == 0:
+                print('Bug')
+
             norm_depths[i] = (d - d_min) / (d_max - d_min)
 
         # HR GT can slightly exceed the LR min/max range -> keep values in [0,1]
