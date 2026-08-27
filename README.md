@@ -1,44 +1,36 @@
 # GDSR-Data-Preperation
 
-Utilities to download, preprocess, and standardize public Guided Depth Super-Resolution (GDSR) benchmarks into a consistent NumPy format (.npy / memory-mapped), along with tools to validate and sanity-check outputs.
-
----
+Utilities to download, preprocess, and standardize public Guided Depth Super-Resolution (GDSR) benchmarks into a consistent NumPy format (`.npy` / memory-mapped), along with tools to validate and sanity-check outputs.
 
 ## Motivation
-Reproducing GDSR results—especially on datasets like NYU Depth v2—is often unnecessarily difficult.
 
-Many prior works:
+Reproducing GDSR results — especially on datasets like NYU Depth v2 — is often unnecessarily difficult. Many prior works:
 
 - Reference secondary or unofficial repositories for dataset splits
 - Provide incomplete or outdated instructions
-
-- Depend on broken or inaccessible links, such as: http://gofile.me/3G5St/2lFq5R3TL
+- Depend on broken or inaccessible links, such as: `http://gofile.me/3G5St/2lFq5R3TL`
 
 As a result, reproducing the exact train/test split used in published papers becomes unreliable and inconsistent.
 
 ## Our Solution
+
 We provide a transparent, reproducible pipeline that:
 
 - Reconstructs datasets using a clearly defined and consistent train–test split aligned with prior literature
-- Converts raw data into efficient .npy and memory-mapped formats for scalable training
+- Converts raw data into efficient `.npy` and memory-mapped formats for scalable training
 - Eliminates dependency on fragile external sources
 
 ## Citation
 
-If you use this repository (scripts, directory layout, or processed tensors) in academic work, **please cite the companion paper** for the GDSR method or evaluation that this project supports.
-
-**Publication (update when the camera-ready entry is fixed):**  
-Tayyab Nasir *et al.*, title and venue to be added with the final PDF (see also the [project repository](https://github.com/tayyabnasir22/GDSR-Data-Preperation)).
-
-BibTeX template—replace `title`, `booktitle` or `journal`, `year`, and `url` with the values from the published version:
+If you use this repository (scripts, directory layout, or processed tensors) in academic work, please cite the companion paper:
 
 ```bibtex
 @article{nasir2026naimasemanticsawarergb,
   title   = {NAIMA: Semantics Aware RGB Guided Depth Super-Resolution},
-  author  = {Tayyab Nasir, Daochang Liu, Ajmal Mian},
-  journal = {arXiv},
+  author  = {Nasir, Tayyab and Liu, Daochang and Mian, Ajmal},
+  journal = {arXiv preprint arXiv:2604.04407},
   year    = {2026},
-  url     = {https://doi.org/10.48550/arXiv.2604.04407},
+  url     = {https://doi.org/10.48550/arXiv.2604.04407}
 }
 ```
 
@@ -55,27 +47,33 @@ You may also cite this codebase directly:
 
 ## Requirements
 
-- Python 3.12 recommended  
-- Next, run the following to create a new environment:
+Python 3.12 is recommended.
+
+1. Create a new virtual environment:
+
 ```bash
 python3.12 -m venv env
 ```
-- Install dependencies:
+
+2. Activate the environment:
+
+```bash
+source env/bin/activate
+```
+
+3. Install dependencies:
+
 ```bash
 python3 -m pip install -r requirements.txt
 ```
 
-For the optional verification notebook, install Jupyter (or VS Code’s notebook support) and ensure `numpy` and `pillow` are available (they are pulled in transitively with the packages above in most environments).
-
----
+For the optional verification notebooks, install Jupyter (or VS Code's notebook support) and ensure `numpy` and `pillow` are available (they are pulled in transitively with the packages above in most environments).
 
 ## Layout and base path
 
 Scripts resolve all inputs and outputs under a **base directory** (`PathManager.BASE_PATH`). Default is `./` (current working directory).
 
 **Important:** Pass a path that ends with a path separator (e.g. `/data/gdsr/` or `./`) so that concatenated paths like `BASE + 'NYUV2/'` resolve correctly. If you omit the trailing slash, paths such as `.../NYUV2/` may break.
-
----
 
 ## 1. Download (`data_download.py`)
 
@@ -97,8 +95,6 @@ python3 data_download.py /path/to/your/data/
 ```
 
 After a successful run you should have, under the base directory, the raw assets expected by the processor (e.g. `nyu_depth_v2_labeled.mat`, `RGBDD-Full/…`, `TOFDSR/…` with `TOFDSR_Train.txt` / `TOFDSR_Test.txt`).
-
----
 
 ## 2. Process (`data_processor.py`)
 
@@ -123,9 +119,7 @@ python3 data_processor.py
 python3 data_processor.py /path/to/your/data/
 ```
 
-**Note:** `Utilities/DirectoryHelper.py` **deletes and recreates** each output benchmark folder before writing, so previous `.npy` outputs in those directories will be removed.
-
----
+> **Warning:** `Utilities/DirectoryHelper.py` **deletes and recreates** each output benchmark folder before writing, so previous `.npy` outputs in those directories will be removed.
 
 ## 3. Test / verification scenarios (`Test.ipynb`)
 
@@ -139,8 +133,16 @@ The notebook performs lightweight **visual checks** that processed TOF-DSR tenso
 
 If shapes print as in the checked-in outputs (e.g. test RGB `(560, 3, 384, 512)`), the pipeline is consistent with the TOF-DSR preprocessing in this repo.
 
----
+### Additional notebooks
+
+The repository also includes supplementary analysis and exploration notebooks:
+
+- `TestReal.ipynb` — verification checks on real-sensor data
+- `MinMaxAnalysisRGBDD.ipynb` / `MinMaxAnalysisTOFDSR.ipynb` — depth min/max range analysis for the RGB-D-D and TOF-DSR benchmarks
+- `DataExploreHypersim.ipynb` — exploration of the Hypersim dataset
+
+
 
 ## License
 
-See [LICENSE](LICENSE).
+This project is licensed under the MIT License — see [LICENSE](LICENSE).
