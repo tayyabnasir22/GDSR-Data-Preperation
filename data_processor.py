@@ -9,13 +9,13 @@ from Utilities.ProcessingTOFDSRReal import ProcessingTOFDSRReal
 import sys
 
 def main():
-    # ProcessingNYUMat.GenerateNPYFiles()
-    # ProcessingRGBDD.GenerateNPYFiles()
-    # ProcessingTOFDSR.GenerateNPYFiles()
-    # ProcessingHypersim.GenerateNPYFiles()
-    # ProcessingDIML.GenerateNPYFiles()
+    ProcessingNYUMat.GenerateNPYFiles()
+    ProcessingRGBDD.GenerateNPYFiles()
+    ProcessingTOFDSR.GenerateNPYFiles()
+    ProcessingHypersim.GenerateNPYFiles()
+    ProcessingDIML.GenerateNPYFiles()
 
-    # ProcessingRGBDDReal.GenerateNPYFiles()
+    ProcessingRGBDDReal.GenerateNPYFiles()
     ProcessingTOFDSRReal.GenerateNPYFiles()
     
 if __name__ == '__main__':
